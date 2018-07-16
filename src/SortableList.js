@@ -60,6 +60,7 @@ export default class SortableList extends Component {
   _resolveRowLayout = {};
 
   _contentOffset = {x: 0, y: 0};
+  _lastChangeTime = 0;
 
   state = {
     animated: false,
@@ -362,6 +363,9 @@ export default class SortableList extends Component {
 
     // Swap rows if necessary.
     if (rowUnderActiveKey !== activeRowKey && rowUnderActiveKey !== this._prevSwapedRowKey) {
+      const now = Date.now();
+      this._lastChangeTime = now;
+
       const isNeighbours = Math.abs(rowUnderActiveIndex - activeRowIndex) === 1;
       let nextOrder;
 
@@ -374,6 +378,20 @@ export default class SortableList extends Component {
         nextOrder.splice(activeRowIndex, 1);
         nextOrder.splice(rowUnderActiveIndex, 0, activeRowKey);
       }
+
+      window.setTimeout(() => {
+        if(this._lastChangeTime !== now) return;
+
+        this.setState({
+          order: nextOrder,
+          activeRowIndex: rowUnderActiveIndex,
+        }, () => {
+          if (this.props.onChangeOrder) {
+            this.props.onChangeOrder(nextOrder);
+          }
+        });
+        this._lastChangeTime = 0;
+      }, 200);
 
       this.setState({
         order: nextOrder,
